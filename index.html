@@ -320,11 +320,11 @@
         
         return (
           <div className="p-4 md:p-8 bg-gray-100 min-h-screen font-sans">
-            <Card className="max-w-7xl mx-auto rounded-xl shadow-lg">
-              <CardHeader className="bg-red-800 text-white rounded-t-xl p-6">
-                <CardTitle className="text-3xl font-bold">Simulador e Projeção de NPS</CardTitle>
+            <Card className="max-w-7xl mx-auto rounded-xl shadow-xl">
+              <CardHeader className="bg-red-800 text-white rounded-t-xl p-10">
+                <CardTitle className="text-5xl font-bold">Se dá pra sonhar,<br />dá pra fazer</CardTitle>
                 <CardDescription className="text-red-100 text-lg">
-                  Ferramenta interativa para simular cenários e calcular metas de NPS.
+                  Ferramenta interativa para simular cenários e calcular metas
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
@@ -344,15 +344,15 @@
                           <tr className="bg-red-700 text-white">
                             <th className="p-3 border-r">Mês</th>
                             <th className="p-3 border-r">Status</th>
-                            <th className="p-3">Promotores</th>
-                            <th className="p-3">Neutros
+                            <th className="p-3 text-center">Promotores</th>
+                            <th className="p-3 text-center">Neutros
                               <span className="block text-xs font-normal text-red-100 mt-1">
                                 (1 Detrator ≈ {neutralPerDetractor} Neutros)
                               </span>
                             </th>
-                            <th className="p-3">Detratores</th>
-                            <th className="p-3">Vol. Total</th>
-                            <th className="p-3">NPS CX</th>
+                            <th className="p-3 text-center">Detratores</th>
+                            <th className="p-3 text-center">Vol. Total</th>
+                            <th className="p-3 text-center">NPS CX</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -370,7 +370,7 @@
                                   <option value="Projetado">Projetado</option>
                                 </select>
                               </td>
-                              <td className="p-3">
+                              <td className="p-3 text-center">
                                 <Input
                                   type="number"
                                   value={monthData.prom}
@@ -379,7 +379,7 @@
                                   disabled={monthData.status === 'Fechado'}
                                 />
                               </td>
-                              <td className="p-3">
+                              <td className="p-3 text-center">
                                 <Input
                                   type="number"
                                   value={monthData.neutr}
@@ -388,7 +388,7 @@
                                   disabled={monthData.status === 'Fechado'}
                                 />
                               </td>
-                              <td className="p-3">
+                              <td className="p-3 text-center">
                                 <Input
                                   type="number"
                                   value={monthData.detra}
@@ -482,7 +482,7 @@
                         </ResponsiveContainer>
                         <div className="mt-4 text-center">
                           <p className="text-xl font-bold text-gray-800">
-                            NPS CX Final Projetado: <span className="text-red-800">{npsProjectionData[npsProjectionData.length - 1]?.npsCx}%</span>
+                            NPS CX Anual Projetado: <span className="text-red-800">{annualTotals.annualNps}%</span>
                           </p>
                         </div>
                       </CardContent>
@@ -522,22 +522,22 @@
                               <thead>
                                 <tr className="bg-green-500 text-white">
                                   <th className="p-3">Mês</th>
-                                  <th className="p-3">Total Notas</th>
-                                  <th className="p-3">Promotores</th>
-                                  <th className="p-3">Detratores</th>
-                                  <th className="p-3">Neutros</th>
-                                  <th className="p-3">NPS Calculado</th>
+                                  <th className="p-3 text-center">Total Notas</th>
+                                  <th className="p-3 text-center">Promotores</th>
+                                  <th className="p-3 text-center">Detratores</th>
+                                  <th className="p-3 text-center">Neutros</th>
+                                  <th className="p-3 text-center">NPS Calculado</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {inverseResults.map((result, index) => (
                                   <tr key={index} className="border-b hover:bg-green-100">
                                     <td className="p-3 font-medium">{result.month}</td>
-                                    <td className="p-3">{result.totalNotas}</td>
-                                    <td className="p-3">{result.promotores}</td>
-                                    <td className="p-3">{result.detratores}</td>
-                                    <td className="p-3">{result.neutros}</td>
-                                    <td className="p-3 font-bold">{result.npsCalculado}%</td>
+                                    <td className="p-3 text-center">{result.totalNotas}</td>
+                                    <td className="p-3 text-center">{result.promotores}</td>
+                                    <td className="p-3 text-center">{result.detratores}</td>
+                                    <td className="p-3 text-center">{result.neutros}</td>
+                                    <td className="p-3 font-bold text-center">{result.npsCalculado}%</td>
                                   </tr>
                                 ))}
                               </tbody>
