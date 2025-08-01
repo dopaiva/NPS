@@ -15,122 +15,47 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body {
       font-family: 'Inter', sans-serif;
+      background-color: #f1f5f9; /* bg-slate-100 */
+    }
+    /* Cor primária (vermelho) e secundária (verde) */
+    :root {
+      --primary-red: #C51A3A;
+      --success-green: #27ae60; /* Tom de verde moderno */
     }
   </style>
 </head>
-<body class="bg-gray-100 p-4 md:p-8">
+<body class="p-4 md:p-8">
   <div id="root"></div>
 
   <script type="text/babel">
-    // Espera que todos os scripts e o DOM estejam carregados antes de iniciar a aplicação React
     window.onload = function() {
-      const { useState, useMemo, useEffect } = React;
-      // As componentes Recharts são desestruturadas aqui dentro do onLOAD,
-      // garantindo que o objeto global 'Recharts' já está definido e disponível.
+      const { useState, useMemo } = React;
       const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
 
-      // Componentes recriados do shadcn para evitar erros de importação
-      const Card = ({ children, className }) => (
-        <div className={`rounded-xl border bg-card text-card-foreground shadow ${className}`}>
-          {children}
-        </div>
-      );
-
-      const CardHeader = ({ children, className }) => (
-        <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>
-          {children}
-        </div>
-      );
-
-      const CardTitle = ({ children, className }) => (
-        <h3 className={`font-semibold tracking-tight text-2xl ${className}`}>
-          {children}
-        </h3>
-      );
-
-      const CardDescription = ({ children, className }) => (
-        <p className={`text-sm text-muted-foreground ${className}`}>
-          {children}
-        </p>
-      );
-
-      const CardContent = ({ children, className }) => (
-        <div className={`p-6 pt-0 ${className}`}>
-          {children}
-        </div>
-      );
-
-      const Button = ({ children, className, onClick, ...props }) => (
-        <button
-          className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 ${className}`}
-          onClick={onClick}
-          {...props}
-        >
-          {children}
-        </button>
-      );
-
-      const Input = ({ className, type, value, onChange, disabled, ...props }) => (
-        <input
-          type={type}
-          value={value}
-          onChange={onChange}
-          disabled={disabled}
-          className={`flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
-          {...props}
-        />
-      );
-
-      const Label = ({ children, className, htmlFor }) => (
-        <label
-          htmlFor={htmlFor}
-          className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`}
-        >
-          {children}
-        </label>
-      );
+      // --- Componentes de UI (Estilo ShadCN) ---
+      const Card = ({ children, className }) => <div className={`rounded-xl border bg-white text-slate-900 shadow-md ${className}`}>{children}</div>;
+      const CardHeader = ({ children, className }) => <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>{children}</div>;
+      const CardTitle = ({ children, className }) => <h3 className={`text-2xl font-semibold leading-none tracking-tight ${className}`}>{children}</h3>;
+      const CardDescription = ({ children, className }) => <p className={`text-sm text-slate-500 ${className}`}>{children}</p>;
+      const CardContent = ({ children, className }) => <div className={`p-6 pt-0 ${className}`}>{children}</div>;
+      const Button = ({ children, className, ...props }) => <button className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 ${className}`} {...props}>{children}</button>;
+      const Input = ({ className, ...props }) => <input className={`flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`} {...props} />;
+      const Label = ({ children, ...props }) => <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" {...props}>{children}</label>;
 
       const Tabs = ({ children, defaultValue }) => {
         const [activeTab, setActiveTab] = useState(defaultValue);
-        return (
-          <div className="flex flex-col">
-            {React.Children.map(children, child =>
-              React.cloneElement(child, { activeTab, setActiveTab })
-            )}
-          </div>
-        );
+        return <div className="flex flex-col">{React.Children.map(children, child => React.cloneElement(child, { activeTab, setActiveTab }))}</div>;
       };
-
-      const TabsList = ({ children, className, activeTab, setActiveTab }) => (
-        <div className={`inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground ${className}`}>
-          {React.Children.map(children, child =>
-            React.cloneElement(child, { activeTab, setActiveTab })
-          )}
-        </div>
-      );
-
-      const TabsTrigger = ({ children, value, className, activeTab, setActiveTab }) => (
+      const TabsList = ({ children, activeTab, setActiveTab }) => <div className="inline-flex h-10 items-center justify-center rounded-md bg-slate-200 p-1 text-slate-500">{React.Children.map(children, child => React.cloneElement(child, { activeTab, setActiveTab }))}</div>;
+      const TabsTrigger = ({ children, value, activeTab, setActiveTab }) => (
         <button
-          className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
-            activeTab === value ? 'bg-background text-foreground shadow' : ''
-          } ${className}`}
+          className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-4 py-1.5 text-sm font-semibold ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 ${activeTab === value ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
           onClick={() => setActiveTab(value)}
-        >
-          {children}
-        </button>
+        >{children}</button>
       );
+      const TabsContent = ({ children, value, activeTab }) => <div className={`${activeTab === value ? 'block' : 'hidden'} mt-4`}>{children}</div>;
 
-      const TabsContent = ({ children, value, className, activeTab }) => (
-        <div className={`mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-          activeTab === value ? '' : 'hidden'
-        } ${className}`}>
-          {children}
-        </div>
-      );
-
-      // O componente App é o container principal da nossa aplicação
       const App = () => {
-        // DADOS ATUALIZADOS CONFORME A IMAGEM FORNECIDA
         const initialCombinedData = [
           { month: 'Jan', prom: 990, neutr: 26, detra: 13, status: 'Fechado' },
           { month: 'Fev', prom: 975, neutr: 38, detra: 26, status: 'Fechado' },
@@ -142,427 +67,207 @@
 
         const allMonths = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
         
-        // Projeção automática para meses não preenchidos
         const initialProjectionData = useMemo(() => {
-          const lastFourMonths = initialCombinedData.filter(d => d.status === 'Fechado').slice(-4);
-          const avgData = lastFourMonths.reduce((acc, curr) => {
-            acc.prom += curr.prom;
-            acc.neutr += curr.neutr;
-            acc.detra += curr.detra;
-            return acc;
-          }, { prom: 0, neutr: 0, detra: 0 });
-        
-          const avgProm = lastFourMonths.length > 0 ? Math.round(avgData.prom / lastFourMonths.length) : 0;
-          const avgNeutr = lastFourMonths.length > 0 ? Math.round(avgData.neutr / lastFourMonths.length) : 0;
-          const avgDetra = lastFourMonths.length > 0 ? Math.round(avgData.detra / lastFourMonths.length) : 0;
-        
+          const lastFourMonths = initialCombinedData.slice(-4);
+          const avgProm = Math.round(lastFourMonths.reduce((sum, d) => sum + d.prom, 0) / lastFourMonths.length);
+          const avgNeutr = Math.round(lastFourMonths.reduce((sum, d) => sum + d.neutr, 0) / lastFourMonths.length);
+          const avgDetra = Math.round(lastFourMonths.reduce((sum, d) => sum + d.detra, 0) / lastFourMonths.length);
+          
           const fullData = [...initialCombinedData];
-          for (let i = initialCombinedData.length; i < allMonths.length; i++) {
-            fullData.push({
-              month: allMonths[i],
-              prom: avgProm,
-              neutr: avgNeutr,
-              detra: avgDetra,
-              status: 'Projetado',
-            });
+          for (let i = fullData.length; i < allMonths.length; i++) {
+            fullData.push({ month: allMonths[i], prom: avgProm, neutr: avgNeutr, detra: avgDetra, status: 'Projetado' });
           }
           return fullData;
         }, []);
-        
+
         const [data, setData] = useState(initialProjectionData);
         const [totalNotas, setTotalNotas] = useState(1000);
         const [inverseResults, setInverseResults] = useState([]);
-        const [annualGoalResult, setAnnualGoalResult] = useState(null);
-        const [projectedTotalNotes, setProjectedTotalNotes] = useState(1000);
 
-        const calculateNps = (promoters, detractors, total) => {
-          if (total === 0) return 0;
-          return parseFloat(((promoters - detractors) / total) * 100).toFixed(1);
-        };
-        
-        const npsProjectionData = useMemo(() => {
-          return data.map(monthData => {
-            const totalVolume = monthData.prom + monthData.neutr + monthData.detra;
-            const npsCx = calculateNps(monthData.prom, monthData.detra, totalVolume);
-            return {
-              ...monthData,
-              totalVolume,
-              npsCx
-            };
-          });
-        }, [data]);
+        const calculateNps = (prom, detra, total) => total === 0 ? 0 : parseFloat(((prom - detra) / total) * 100).toFixed(1);
+
+        const npsProjectionData = useMemo(() => data.map(d => {
+          const totalVolume = d.prom + d.neutr + d.detra;
+          const npsCx = calculateNps(d.prom, d.detra, totalVolume);
+          return { ...d, totalVolume, npsCx };
+        }), [data]);
 
         const annualTotals = useMemo(() => {
-          const totalProm = npsProjectionData.reduce((sum, d) => sum + d.prom, 0);
-          const totalNeutr = npsProjectionData.reduce((sum, d) => sum + d.neutr, 0);
-          const totalDetra = npsProjectionData.reduce((sum, d) => sum + d.detra, 0);
-          const totalVolume = totalProm + totalNeutr + totalDetra;
-          const annualNps = calculateNps(totalProm, totalDetra, totalVolume);
-          return { totalProm, totalNeutr, totalDetra, totalVolume, annualNps };
+          const totals = npsProjectionData.reduce((acc, d) => {
+            acc.totalProm += d.prom;
+            acc.totalNeutr += d.neutr;
+            acc.totalDetra += d.detra;
+            acc.totalVolume += d.totalVolume;
+            return acc;
+          }, { totalProm: 0, totalNeutr: 0, totalDetra: 0, totalVolume: 0 });
+          totals.annualNps = calculateNps(totals.totalProm, totals.totalDetra, totals.totalVolume);
+          return totals;
         }, [npsProjectionData]);
-        
-        const neutralPerDetractor = useMemo(() => {
-          const closedData = initialCombinedData.filter(d => d.status === 'Fechado');
-          const totalNeutrosFechado = closedData.reduce((sum, d) => sum + d.neutr, 0);
-          const totalDetratoresFechado = closedData.reduce((sum, d) => sum + d.detra, 0);
-          return totalDetratoresFechado > 0 ? parseFloat(totalNeutrosFechado / totalDetratoresFechado).toFixed(1) : 0;
-        }, []);
-        
+
         const handleProjectionChange = (index, type, value) => {
           const newData = [...data];
           newData[index][type] = parseInt(value, 10) || 0;
           setData(newData);
         };
-
-        const handleStatusChange = (index, newStatus) => {
-          const newData = [...data];
-          newData[index].status = newStatus;
-
-          if (newStatus === 'Projetado') {
-             const lastFourMonths = newData.slice(0, index).filter(d => d.status === 'Fechado').slice(-4);
-            const avgData = lastFourMonths.reduce((acc, curr) => {
-              acc.prom += curr.prom;
-              acc.neutr += curr.neutr;
-              acc.detra += curr.detra;
-              return acc;
-            }, { prom: 0, neutr: 0, detra: 0 });
-
-            const avgProm = lastFourMonths.length > 0 ? Math.round(avgData.prom / lastFourMonths.length) : 0;
-            const avgNeutr = lastFourMonths.length > 0 ? Math.round(avgData.neutr / lastFourMonths.length) : 0;
-            const avgDetra = lastFourMonths.length > 0 ? Math.round(avgData.detra / lastFourMonths.length) : 0;
-
-            newData[index].prom = avgProm;
-            newData[index].neutr = avgNeutr;
-            newData[index].detra = avgDetra;
-          }
-
-          setData(newData);
-        };
         
         const handleInverseCalculation = () => {
           const targetNps = 95;
-          const results = [];
-          
           const closedData = data.filter(d => d.status === 'Fechado');
-          const initialTotalNotes = closedData.reduce((sum, d) => sum + d.prom + d.neutr + d.detra, 0);
+          const initialTotalNotes = closedData.reduce((sum, d) => sum + d.totalVolume, 0);
           const initialTotalNeutrals = closedData.reduce((sum, d) => sum + d.neutr, 0);
-          const neutralRatio = initialTotalNotes > 0 ? initialTotalNeutrals / initialTotalNotes : 0;
-        
-          for (let i = 0; i < 12; i++) {
-            const notes = totalNotas;
-            const neutrals = Math.round(notes * neutralRatio);
-            const equation1 = (targetNps / 100) * notes;
-            const equation2 = notes - neutrals;
-            const promoters = Math.round((equation1 + equation2) / 2);
-            const detractors = Math.round((equation2 - equation1) / 2);
-        
-            results.push({
-              month: allMonths[i],
-              totalNotas: notes,
+          const neutralRatio = initialTotalNotes > 0 ? initialTotalNeutrals / initialTotalNotes : 0.05;
+
+          const results = allMonths.map(month => {
+            const neutrals = Math.round(totalNotas * neutralRatio);
+            const promotersAndDetractors = totalNotas - neutrals;
+            const promoters = Math.round((promotersAndDetractors + (targetNps / 100 * totalNotas)) / 2);
+            const detractors = promotersAndDetractors - promoters;
+            return {
+              month,
+              totalNotas,
               promotores: promoters,
               detratores: detractors,
               neutros: neutrals,
-              npsCalculado: calculateNps(promoters, detractors, notes),
-            });
-          }
+              npsCalculado: calculateNps(promoters, detractors, totalNotas),
+            };
+          });
           setInverseResults(results);
         };
-        
-        const handleAnnualGoalCalculation = () => {
-          const monthsPast = data.filter(d => d.status === 'Fechado').length;
-          const monthsToProject = allMonths.length - monthsPast;
-          const annualTargetNps = 95;
-        
-          const pastMetrics = data.filter(d => d.status === 'Fechado').reduce((acc, curr) => {
-            acc.totalVolume += curr.prom + curr.neutr + curr.detra;
-            acc.totalPromoters += curr.prom;
-            acc.totalNeutrals += curr.neutr;
-            acc.totalDetractors += curr.detra;
-            return acc;
-          }, { totalVolume: 0, totalPromoters: 0, totalNeutrals: 0, totalDetractors: 0 });
-        
-          const projectedTotalAnnualVolume = pastMetrics.totalVolume + (monthsToProject * projectedTotalNotes);
-          const currentNps = calculateNps(pastMetrics.totalPromoters, pastMetrics.totalDetractors, pastMetrics.totalVolume);
-          const neutralRatio = pastMetrics.totalVolume > 0 ? pastMetrics.totalNeutrals / pastMetrics.totalVolume : 0;
-          
-          const targetPromotersDetractorsSum = projectedTotalAnnualVolume - (projectedTotalAnnualVolume * neutralRatio);
-          const targetPromotersDetractorsDiff = (annualTargetNps / 100) * projectedTotalAnnualVolume;
-          
-          const totalPromotersNeeded = Math.round((targetPromotersDetractorsSum + targetPromotersDetractorsDiff) / 2);
-          const totalDetractorsNeeded = Math.round((targetPromotersDetractorsSum - targetPromotersDetractorsDiff) / 2);
-          const totalNeutralsNeeded = Math.round(projectedTotalAnnualVolume * neutralRatio);
-          
-          const remainingPromotersNeeded = totalPromotersNeeded - pastMetrics.totalPromoters;
-          const remainingDetractorsNeeded = totalDetractorsNeeded - pastMetrics.totalDetractors;
-          const remainingNeutralsNeeded = totalNeutralsNeeded - pastMetrics.totalNeutrals;
-        
-          let isAchievable = true;
-          let maxNps = 0;
-          
-          if (remainingPromotersNeeded < 0 || remainingDetractorsNeeded < 0 || remainingNeutralsNeeded < 0 || monthsToProject <= 0) {
-            isAchievable = false;
-            const maxPossiblePromoters = pastMetrics.totalPromoters + (monthsToProject * (projectedTotalNotes - Math.round(projectedTotalNotes * neutralRatio)));
-            const maxPossibleDetractors = pastMetrics.totalDetractors;
-            maxNps = calculateNps(maxPossiblePromoters, maxPossibleDetractors, projectedTotalAnnualVolume);
-          }
-          
-          setAnnualGoalResult({
-            isAchievable,
-            currentNps,
-            projectedTotalAnnualVolume,
-            targetNps: annualTargetNps,
-            maxNps,
-            monthlyPromoters: isAchievable && monthsToProject > 0 ? Math.round(remainingPromotersNeeded / monthsToProject) : 'N/A',
-            monthlyDetractors: isAchievable && monthsToProject > 0 ? Math.round(remainingDetractorsNeeded / monthsToProject) : 'N/A',
-            monthlyNeutrals: isAchievable && monthsToProject > 0 ? Math.round(remainingNeutralsNeeded / monthsToProject) : 'N/A',
-          });
-        };
-        
+
         return (
-          <div className="p-4 md:p-8 bg-gray-100 min-h-screen font-sans">
-            <Card className="max-w-7xl mx-auto rounded-xl shadow-lg">
-              <CardHeader className="bg-red-800 text-white rounded-t-xl p-6">
-                <CardTitle className="text-3xl font-bold">Simulador e Projeção de NPS</CardTitle>
-                <CardDescription className="text-red-100 text-lg">
-                  Ferramenta interativa para simular cenários e calcular metas de NPS.
-                </CardDescription>
+          <div className="max-w-7xl mx-auto space-y-8">
+            <Card>
+              <CardHeader className="!p-0">
+                  <div style={{backgroundColor: 'var(--primary-red)'}} className="p-8 rounded-t-xl">
+                      <h1 className="text-4xl font-bold text-white">Você no Centro de tudo</h1>
+                      <p className="text-white/80 mt-2">Temos uma equipe de <span className="font-bold">vendas especializada</span> para lhe atender e tirar suas dúvidas.</p>
+                      <p className="text-2xl font-semibold text-white mt-4">4020-3538</p>
+                  </div>
               </CardHeader>
               <CardContent className="p-6">
                 <Tabs defaultValue="projection">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="projection">Projeção de NPS</TabsTrigger>
-                    <TabsTrigger value="inverse">Cálculo Inverso (Meta NPS 95)</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="projection" className="mt-4">
-                    <h3 className="text-2xl font-semibold mb-4 text-gray-800">Projeção de NPS CX Consolidado</h3>
-                    <p className="text-gray-600 mb-6">
-                      Ajuste os volumes de promotores, detratores e neutros para a visão consolidada de todos os canais e veja a projeção do NPS CX.
-                    </p>
-                    <div className="overflow-x-auto mb-6">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-red-700 text-white">
-                            <th className="p-3 border-r">Mês</th>
-                            <th className="p-3 border-r">Status</th>
-                            <th className="p-3">Promotores</th>
-                            <th className="p-3">Neutros
-                              <span className="block text-xs font-normal text-red-100 mt-1">
-                                (1 Detrator ≈ {neutralPerDetractor} Neutros)
-                              </span>
-                            </th>
-                            <th className="p-3">Detratores</th>
-                            <th className="p-3">Vol. Total</th>
-                            <th className="p-3">NPS CX</th>
+                  <div className="flex justify-center">
+                    <TabsList>
+                      <TabsTrigger value="projection">Projeção de NPS</TabsTrigger>
+                      <TabsTrigger value="inverse">Cálculo Inverso (Meta NPS 95)</TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  <TabsContent value="projection">
+                    <div className="mt-6 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-slate-100">
+                          <tr>
+                            <th className="p-3 text-left font-semibold text-slate-600 rounded-l-lg">Mês</th>
+                            <th className="p-3 text-center font-semibold text-slate-600">Promotores</th>
+                            <th className="p-3 text-center font-semibold text-slate-600">Neutros</th>
+                            <th className="p-3 text-center font-semibold text-slate-600">Detratores</th>
+                            <th className="p-3 text-center font-semibold text-slate-600">Vol. Total</th>
+                            <th className="p-3 text-center font-semibold text-slate-600 rounded-r-lg">NPS CX</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {npsProjectionData.map((monthData, index) => (
-                            <tr key={index} className={`border-b ${monthData.status === 'Projetado' ? 'bg-red-50' : 'hover:bg-gray-50'}`}>
-                              <td className="p-3 font-medium border-r">{monthData.month}</td>
-                              <td className="p-3 border-r text-sm text-center">
-                                <select
-                                  value={monthData.status}
-                                  onChange={(e) => handleStatusChange(index, e.target.value)}
-                                  className={`block w-full rounded-md border border-gray-300 p-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500
-                                  ${monthData.status === 'Fechado' ? 'bg-gray-200 text-gray-500' : 'bg-white text-gray-900'}`}
-                                >
-                                  <option value="Fechado">Fechado</option>
-                                  <option value="Projetado">Projetado</option>
-                                </select>
-                              </td>
-                              <td className="p-3">
-                                <Input
-                                  type="number"
-                                  value={monthData.prom}
-                                  onChange={(e) => handleProjectionChange(index, 'prom', e.target.value)}
-                                  className="w-full text-center"
-                                  disabled={monthData.status === 'Fechado'}
-                                />
-                              </td>
-                              <td className="p-3">
-                                <Input
-                                  type="number"
-                                  value={monthData.neutr}
-                                  onChange={(e) => handleProjectionChange(index, 'neutr', e.target.value)}
-                                  className="w-full text-center"
-                                  disabled={monthData.status === 'Fechado'}
-                                />
-                              </td>
-                              <td className="p-3">
-                                <Input
-                                  type="number"
-                                  value={monthData.detra}
-                                  onChange={(e) => handleProjectionChange(index, 'detra', e.target.value)}
-                                  className="w-full text-center"
-                                  disabled={monthData.status === 'Fechado'}
-                                />
-                              </td>
-                              <td className="p-3 font-bold text-gray-600 text-center">{monthData.totalVolume}</td>
-                              <td className="p-3 font-bold text-red-800 text-center">{monthData.npsCx}%</td>
+                          {npsProjectionData.map((d, index) => (
+                            <tr key={d.month} className="border-b border-slate-100 last:border-0">
+                              <td className="p-2 font-medium">{d.month}</td>
+                              <td className="p-2"><Input type="number" value={d.prom} onChange={e => handleProjectionChange(index, 'prom', e.target.value)} disabled={d.status === 'Fechado'} className="text-center"/></td>
+                              <td className="p-2"><Input type="number" value={d.neutr} onChange={e => handleProjectionChange(index, 'neutr', e.target.value)} disabled={d.status === 'Fechado'} className="text-center"/></td>
+                              <td className="p-2"><Input type="number" value={d.detra} onChange={e => handleProjectionChange(index, 'detra', e.target.value)} disabled={d.status === 'Fechado'} className="text-center"/></td>
+                              <td className="p-2 text-center font-medium text-slate-600">{d.totalVolume}</td>
+                              <td className="p-2 text-center font-bold" style={{color: 'var(--primary-red)'}}>{d.npsCx}%</td>
                             </tr>
                           ))}
-                          {/* Linha de Subtotal Anual */}
-                          <tr className="border-b bg-red-800 text-white font-bold text-lg">
-                            <td className="p-3 border-r" colSpan="2">Subtotal Anual</td>
-                            <td className="p-3 text-center">{annualTotals.totalProm}</td>
-                            <td className="p-3 text-center">{annualTotals.totalNeutr}</td>
-                            <td className="p-3 text-center">{annualTotals.totalDetra}</td>
-                            <td className="p-3 text-center">{annualTotals.totalVolume}</td>
-                            <td className="p-3 text-center">{annualTotals.annualNps}%</td>
-                          </tr>
                         </tbody>
                       </table>
                     </div>
-                    
-                    <Card className="bg-blue-50 border-blue-200 mt-8">
-                      <CardHeader>
-                        <CardTitle className="text-xl">Análise de Meta Anual (NPS 95)</CardTitle>
-                        <CardDescription>
-                          Com base no volume projetado, veja a distribuição necessária para atingir a meta de NPS 95 para o ano.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                         <div className="flex items-end space-x-4 mb-4">
-                          <div className="flex-grow">
-                            <Label htmlFor="projected-total-notes" className="text-base">Volume de Notas Projetado por Mês</Label>
-                            <Input
-                              id="projected-total-notes"
-                              type="number"
-                              value={projectedTotalNotes}
-                              onChange={(e) => setProjectedTotalNotes(parseInt(e.target.value, 10) || 0)}
-                              className="mt-2 text-center"
-                            />
-                          </div>
-                          <Button onClick={handleAnnualGoalCalculation} className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg">
-                            Calcular Meta Anual
-                          </Button>
+                    {/* CARD DE RESULTADO ANUAL */}
+                    <div className="mt-6 p-4 bg-slate-800 rounded-lg text-white">
+                        <h4 className="font-semibold text-lg text-center">Resultado Anual Projetado</h4>
+                        <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                            <div><p className="text-sm text-slate-300">Promotores</p><p className="text-2xl font-bold">{annualTotals.totalProm}</p></div>
+                            <div><p className="text-sm text-slate-300">Neutros</p><p className="text-2xl font-bold">{annualTotals.totalNeutr}</p></div>
+                            <div><p className="text-sm text-slate-300">Detratores</p><p className="text-2xl font-bold">{annualTotals.totalDetra}</p></div>
+                            <div><p className="text-sm text-slate-300">Volume Total</p><p className="text-2xl font-bold">{annualTotals.totalVolume}</p></div>
+                            <div className="col-span-2 md:col-span-1 mt-2 md:mt-0 p-3 rounded-lg bg-red-600"><p className="text-sm text-white/80">NPS Anual</p><p className="text-3xl font-bold">{annualTotals.annualNps}%</p></div>
                         </div>
-                        {annualGoalResult && (
-                          <div className="mt-4">
-                            <p className="text-lg font-semibold">Resumo do Ano:</p>
-                            <ul className="list-disc list-inside space-y-1 mt-2 text-gray-700">
-                              <li>NPS Acumulado até o momento: <span className="font-bold text-blue-800">{annualGoalResult.currentNps}%</span></li>
-                              <li>Volume Total Anual Projetado: <span className="font-bold">{annualGoalResult.projectedTotalAnnualVolume}</span> notas</li>
-                            </ul>
-                            {annualGoalResult.isAchievable ? (
-                              <div className="mt-4 p-4 rounded-lg bg-green-100 text-green-800 border border-green-300">
-                                <p className="font-bold text-xl">A meta anual de NPS 95% é alcançável!</p>
-                                <p className="mt-2">Para alcançar a meta, a distribuição mensal necessária é:</p>
-                                <ul className="mt-2 list-disc list-inside font-medium">
-                                  <li>Promotores por Mês: <span className="font-bold text-green-900">{annualGoalResult.monthlyPromoters}</span></li>
-                                  <li>Neutros por Mês: <span className="font-bold text-green-900">{annualGoalResult.monthlyNeutrals}</span></li>
-                                  <li>Detratores por Mês: <span className="font-bold text-green-900">{annualGoalResult.monthlyDetractors}</span></li>
-                                </ul>
-                              </div>
-                            ) : (
-                              <div className="mt-4 p-4 rounded-lg bg-red-100 text-red-800 border border-red-300">
-                                <p className="font-bold text-xl">Aviso: A meta anual de NPS 95% é inatingível.</p>
-                                <p className="mt-2">O NPS máximo que você pode atingir com o volume de notas projetado é: <span className="font-bold text-red-900">{annualGoalResult.maxNps}%</span>.</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="bg-red-50 border-red-200 mt-8">
-                      <CardHeader>
-                        <CardTitle className="text-xl">Gráfico de Projeção do NPS CX</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <LineChart data={npsProjectionData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis dataKey="month" />
-                            <YAxis domain={[0, 100]} />
-                            <Tooltip />
-                            <Legend />
-                            <Line type="monotone" dataKey="npsCx" name="NPS CX Projetado" stroke="#a51f38" strokeWidth={2} activeDot={{ r: 8 }} animationDuration={1500} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                        <div className="mt-4 text-center">
-                          <p className="text-xl font-bold text-gray-800">
-                            NPS CX Final Projetado: <span className="text-red-800">{npsProjectionData[npsProjectionData.length - 1]?.npsCx}%</span>
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  <TabsContent value="inverse" className="mt-4">
-                    <h3 className="text-2xl font-semibold mb-4 text-gray-800">Cálculo Inverso (Meta de NPS 95)</h3>
-                    <p className="text-gray-600 mb-6">
-                      Informe o volume total de notas que você espera obter por mês para ver a distribuição necessária para alcançar um NPS de 95.
-                    </p>
-                    <div className="flex items-end space-x-4 mb-6 p-4 bg-gray-50 border rounded-lg">
-                      <div className="flex-grow">
-                        <Label htmlFor="total-notas" className="text-base">Volume Total de Notas por Mês</Label>
-                        <Input
-                          id="total-notas"
-                          type="number"
-                          value={totalNotas}
-                          onChange={(e) => setTotalNotas(parseInt(e.target.value, 10) || 0)}
-                          className="mt-2 text-center"
-                        />
-                      </div>
-                      <Button onClick={handleInverseCalculation} className="bg-green-600 hover:bg-green-700 text-white shadow-lg">
-                        Calcular Meta Mensal
-                      </Button>
                     </div>
-                    {inverseResults.length > 0 && (
-                      <Card className="bg-green-50 border-green-200">
+                  </TabsContent>
+                  
+                  <TabsContent value="inverse">
+                     <Card className="mt-6 bg-slate-50 border-slate-200">
                         <CardHeader>
-                          <CardTitle className="text-xl">Resultados para a Meta de NPS 95</CardTitle>
-                          <CardDescription>
-                            A meta é um NPS de 95. Os valores abaixo indicam a distribuição necessária de feedback.
-                          </CardDescription>
+                            <CardTitle className="text-xl">Resultados para a Meta de NPS 95</CardTitle>
+                            <CardDescription>Informe o volume total de notas mensal para ver a distribuição necessária.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                              <thead>
-                                <tr className="bg-green-500 text-white">
-                                  <th className="p-3">Mês</th>
-                                  <th className="p-3">Total Notas</th>
-                                  <th className="p-3">Promotores</th>
-                                  <th className="p-3">Detratores</th>
-                                  <th className="p-3">Neutros</th>
-                                  <th className="p-3">NPS Calculado</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {inverseResults.map((result, index) => (
-                                  <tr key={index} className="border-b hover:bg-green-100">
-                                    <td className="p-3 font-medium">{result.month}</td>
-                                    <td className="p-3">{result.totalNotas}</td>
-                                    <td className="p-3">{result.promotores}</td>
-                                    <td className="p-3">{result.detratores}</td>
-                                    <td className="p-3">{result.neutros}</td>
-                                    <td className="p-3 font-bold">{result.npsCalculado}%</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                           <div className="flex items-end gap-4 mb-6">
+                                <div className="flex-grow"><Label htmlFor="total-notas">Volume Total de Notas por Mês</Label><Input id="total-notas" type="number" value={totalNotas} onChange={e => setTotalNotas(parseInt(e.target.value) || 0)} className="mt-2"/></div>
+                                <Button onClick={handleInverseCalculation} style={{backgroundColor: 'var(--success-green)'}} className="text-white shadow-lg hover:opacity-90">Calcular Meta</Button>
+                           </div>
+                           {inverseResults.length > 0 && (
+                             <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr style={{backgroundColor: 'var(--success-green)'}} className="text-white">
+                                      <th className="p-3 text-center font-semibold rounded-l-lg">Mês</th>
+                                      <th className="p-3 text-center font-semibold">Total Notas</th>
+                                      <th className="p-3 text-center font-semibold">Promotores</th>
+                                      <th className="p-3 text-center font-semibold">Detratores</th>
+                                      <th className="p-3 text-center font-semibold">Neutros</th>
+                                      <th className="p-3 text-center font-semibold rounded-r-lg">NPS Calculado</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {inverseResults.map(r => (
+                                      <tr key={r.month} className="border-b border-slate-100 last:border-0">
+                                        <td className="p-2 text-center font-medium">{r.month}</td>
+                                        <td className="p-2 text-center">{r.totalNotas}</td>
+                                        <td className="p-2 text-center text-green-700 font-medium">{r.promotores}</td>
+                                        <td className="p-2 text-center text-red-700 font-medium">{r.detratores}</td>
+                                        <td className="p-2 text-center text-slate-600">{r.neutros}</td>
+                                        <td className="p-2 text-center font-bold" style={{color: 'var(--success-green)'}}>{r.npsCalculado}%</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                             </div>
+                           )}
                         </CardContent>
-                      </Card>
-                    )}
+                     </Card>
                   </TabsContent>
                 </Tabs>
               </CardContent>
             </Card>
-            {/* INFORMATIVO DE CRÉDITO ADICIONADO */}
-            <footer className="text-center mt-8 pb-4">
-              <p className="text-sm text-gray-500">
-                Desenvolvido por Adriana Paiva
-              </p>
+
+            <Card>
+              <CardHeader><CardTitle>Gráfico de Projeção do NPS CX</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={npsProjectionData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="month" tick={{fill: '#64748b'}} />
+                    <YAxis tick={{fill: '#64748b'}} />
+                    <Tooltip contentStyle={{backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '0.5rem'}}/>
+                    <Legend />
+                    <Line type="monotone" dataKey="npsCx" name="NPS CX Projetado" stroke="#C51A3A" strokeWidth={3} activeDot={{ r: 8 }} dot={{ r: 5 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="mt-4 text-center">
+                  <p className="text-lg text-slate-600">
+                    NPS CX Final Projetado: <span className="text-2xl font-bold" style={{color: 'var(--primary-red)'}}>{npsProjectionData[npsProjectionData.length - 1]?.npsCx}%</span>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <footer className="text-center pb-4">
+              <p className="text-sm text-slate-500">Desenvolvido por Adriana Paiva</p>
             </footer>
           </div>
         );
       };
 
-      const rootElement = document.getElementById('root');
-      const root = ReactDOM.createRoot(rootElement);
-      root.render(<App />);
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     };
   </script>
 </body>
