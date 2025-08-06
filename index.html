@@ -347,10 +347,8 @@
       const correlationResult = useMemo(() => {
         const closedData = correlationData.filter(d => d.status === 'Fechado' && d.indicadorA !== '' && d.indicadorB !== '');
         if (closedData.length < 2) return null;
-
         const n = closedData.length;
         let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
-
         closedData.forEach(d => {
           sumX += parseFloat(d.indicadorA);
           sumY += parseFloat(d.indicadorB);
@@ -358,11 +356,9 @@
           sumX2 += Math.pow(parseFloat(d.indicadorA), 2);
           sumY2 += Math.pow(parseFloat(d.indicadorB), 2);
         });
-
         const numerator = (n * sumXY) - (sumX * sumY);
         const denominator = Math.sqrt(((n * sumX2) - Math.pow(sumX, 2)) * ((n * sumY2) - Math.pow(sumY, 2)));
         const correlation = denominator === 0 ? 0 : numerator / denominator;
-
         return correlation;
       }, [correlationData]);
       const correlationExplanation = useMemo(() => {
@@ -378,16 +374,24 @@
         }
         return "Correlação fraca ou inexistente. Não há uma relação linear clara entre os indicadores.";
       }, [correlationResult]);
-
+      
       // DADOS E FUNÇÕES PARA A NOVA ABA DE ANÁLISE MENSAL
-      const [monthlyAnalysisData, setMonthlyAnalysisData] = useState({
-        currentProm: '', currentNeut: '', currentDetra: '',
-        projectedProm: '', projectedNeut: '', projectedDetra: '', npsGoal: '95',
-        neutralStrategies: '', detractorStrategies: ''
+      const [monthlyAnalysisData, setMonthlyAnalysisData] = useState({ 
+        currentProm: '', 
+        currentNeut: '', 
+        currentDetra: '', 
+        projectedProm: '', 
+        projectedNeut: '', 
+        projectedDetra: '', 
+        npsGoal: '95', 
+        neutralStrategies: '', 
+        detractorStrategies: ''
       });
+
       const handleMonthlyAnalysisChange = (field, value) => {
         setMonthlyAnalysisData(prev => ({ ...prev, [field]: value }));
       };
+      
       const monthlyAnalysisCalcs = useMemo(() => {
         const cProm = Number(monthlyAnalysisData.currentProm) || 0;
         const cNeut = Number(monthlyAnalysisData.currentNeut) || 0;
@@ -395,38 +399,68 @@
         const pProm = Number(monthlyAnalysisData.projectedProm) || 0;
         const pNeut = Number(monthlyAnalysisData.projectedNeut) || 0;
         const pDetra = Number(monthlyAnalysisData.projectedDetra) || 0;
+        const npsGoal = Number(monthlyAnalysisData.npsGoal) || 0;
         
-        const currentTotal = cProm + cNeut + cDetra;
-        const currentNps = calculateNps(cProm, cDetra, currentTotal);
-        
-        const projectedTotal = pProm + pNeut + pDetra;
-        const projectedNps = calculateNps(pProm, pDetra, projectedTotal);
+        const totalCurrentVolume = cProm + cNeut + cDetra;
+        const totalProjectedVolume = pProm + pNeut + pDetra;
 
-        const neutralDiff = cNeut - pNeut;
-        const neutralExceedPercent = pNeut > 0 ? ((neutralDiff / pNeut) * 100).toFixed(1) : 0;
-        const detractorDiff = cDetra - pDetra;
-        const detractorExceedPercent = pDetra > 0 ? ((detractorDiff / pDetra) * 100).toFixed(1) : 0;
+        // Simulando dias úteis para o cálculo de projeção diária
+        const currentDayOfMonth = 20; // Simula o dia atual do mês
+        const totalWorkingDaysInMonth = 22; // Simula o total de dias úteis no mês
+        
+        const currentNps = calculateNps(cProm, cDetra, totalCurrentVolume);
+        const projectedNps = calculateNps(pProm, pDetra, totalProjectedVolume);
+        
+        const projectedTotalDailyAverage = totalProjectedVolume > 0 && totalWorkingDaysInMonth > 0
+          ? (totalProjectedVolume / totalWorkingDaysInMonth).toFixed(1)
+          : 0;
+        
+        const currentTotalDailyAverage = totalCurrentVolume > 0 && currentDayOfMonth > 0
+          ? (totalCurrentVolume / currentDayOfMonth).toFixed(1)
+          : 0;
+        
+        const isAheadOfProjection = currentTotalDailyAverage >= projectedTotalDailyAverage;
+        
+        // Cálculo Inverso para o limite
+        const calculateInverseLimit = (totalNotes, targetNps) => {
+            if (totalNotes === 0 || targetNps === 0) return { promoters: 0, neutrals: 0, detractors: 0 };
+            const closedData = initialCombinedData.filter(d => d.status === 'Fechado');
+            const initialTotalNotes = closedData.reduce((sum, d) => sum + d.prom + d.neutr + d.detra, 0);
+            const initialTotalNeutrals = closedData.reduce((sum, d) => sum + d.neutr, 0);
+            const neutralRatio = initialTotalNotes > 0 ? initialTotalNeutrals / initialTotalNotes : 0;
+            const neutrals = Math.round(totalNotes * neutralRatio);
+            const equation1 = (targetNps / 100) * totalNotes;
+            const equation2 = totalNotes - neutrals;
+            const promoters = Math.round((equation1 + equation2) / 2);
+            const detractors = Math.round((equation2 - equation1) / 2);
+            return { promoters, neutrals, detractors };
+        };
+
+        const inverseGoal = calculateInverseLimit(totalCurrentVolume, npsGoal);
 
         return {
-          currentTotal, currentNps, projectedTotal, projectedNps,
-          neutralDiff, neutralExceedPercent, detractorDiff, detractorExceedPercent
+          currentNps,
+          projectedNps,
+          totalCurrentVolume,
+          totalProjectedVolume,
+          projectedTotalDailyAverage,
+          currentTotalDailyAverage,
+          isAheadOfProjection,
+          inverseGoal
         };
+
       }, [monthlyAnalysisData]);
 
-
       return (
-        <div className="p-4 md:p-8 bg-gray-100 min-h-screen font-sans">
-          <Card className="max-w-7xl mx-auto rounded-3xl shadow-2xl">
-            <CardHeader className="bg-gradient-to-r from-red-600 to-red-900 text-white rounded-t-3xl p-10">
-              <CardTitle className="text-5xl font-extrabold drop-shadow-lg">Simulador de NPS</CardTitle>
-              <CardDescription className="text-red-100 text-lg font-light mt-2">
-                Ferramenta interativa para simular cenários, analisar metas e gerar planos de ação
+        <div className="w-full max-w-7xl mx-auto space-y-8">
+          <Card className="p-8">
+            <CardHeader>
+              <CardTitle>Simulador e Projeção de NPS</CardTitle>
+              <CardDescription>
+                Ferramenta para análise e projeção de indicadores de performance.
               </CardDescription>
-              <p className="mt-4 text-xl md:text-2xl font-bold text-white drop-shadow-md">
-                Se dá pra sonhar, dá pra fazer
-              </p>
             </CardHeader>
-            <CardContent className="p-6 md:p-10">
+            <CardContent>
               <Tabs defaultValue="projection">
                 <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8">
                   <TabsTrigger value="projection">Projeção de NPS</TabsTrigger>
@@ -753,7 +787,7 @@
                               <Input id="currentDetra" type="number" placeholder="Valor atual" value={monthlyAnalysisData.currentDetra} onChange={e => handleMonthlyAnalysisChange('currentDetra', e.target.value)} />
                             </div>
                             <div className="mt-4 p-4 bg-white rounded-lg text-center shadow-sm">
-                              <p className="font-semibold">Volume Total: <span className="font-bold text-red-700">{monthlyAnalysisCalcs.currentTotal}</span></p>
+                              <p className="font-semibold">Volume Total: <span className="font-bold text-red-700">{monthlyAnalysisCalcs.totalCurrentVolume}</span></p>
                               <p className="font-semibold">NPS Atual: <span className="font-bold text-red-700">{monthlyAnalysisCalcs.currentNps}%</span></p>
                             </div>
                           </div>
@@ -765,12 +799,12 @@
                               <Input id="projectedProm" type="number" placeholder="Valor projetado" value={monthlyAnalysisData.projectedProm} onChange={e => handleMonthlyAnalysisChange('projectedProm', e.target.value)} />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="projectedNeut">Limite de Neutros</Label>
-                              <Input id="projectedNeut" type="number" placeholder="Limite projetado" value={monthlyAnalysisData.projectedNeut} onChange={e => handleMonthlyAnalysisChange('projectedNeut', e.target.value)} />
+                              <Label htmlFor="projectedNeut">Neutros projetados</Label>
+                              <Input id="projectedNeut" type="number" placeholder="Valor projetado" value={monthlyAnalysisData.projectedNeut} onChange={e => handleMonthlyAnalysisChange('projectedNeut', e.target.value)} />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="projectedDetra">Limite de Detratores</Label>
-                              <Input id="projectedDetra" type="number" placeholder="Limite projetado" value={monthlyAnalysisData.projectedDetra} onChange={e => handleMonthlyAnalysisChange('projectedDetra', e.target.value)} />
+                              <Label htmlFor="projectedDetra">Detratores projetados</Label>
+                              <Input id="projectedDetra" type="number" placeholder="Valor projetado" value={monthlyAnalysisData.projectedDetra} onChange={e => handleMonthlyAnalysisChange('projectedDetra', e.target.value)} />
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="npsGoal">Meta de NPS</Label>
@@ -780,48 +814,53 @@
                         </div>
                       </div>
 
-                      {/* PASSO 2, 3 e 4: SCRIPT GERADO */}
-                      <div className="space-y-6 pt-6 border-t border-gray-200">
-                        {/* Análise Comparativa */}
-                        <div>
-                          <h4 className="text-xl font-bold mb-4 text-red-800">Passo 2: Análise Comparativa</h4>
-                          <div className="space-y-4">
-                            <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded-r-lg">
-                              <p className="font-bold">Limite de Neutros</p>
-                              {(monthlyAnalysisCalcs.neutralDiff > 0) ? (
-                                <p><strong>Análise:</strong> No momento, temos <strong>{monthlyAnalysisData.currentNeut || 0}</strong> neutros, o que excede o limite projetado de <strong>{monthlyAnalysisData.projectedNeut || 0}</strong> em <strong>{monthlyAnalysisCalcs.neutralExceedPercent}%</strong>.</p>
-                              ) : (
-                                <p><strong>Análise:</strong> No momento, temos <strong>{monthlyAnalysisData.currentNeut || 0}</strong> neutros. Estamos dentro do limite projetado de <strong>{monthlyAnalysisData.projectedNeut || 0}</strong>.</p>
-                              )}
-                              <p><strong>Ação necessária:</strong> {monthlyAnalysisCalcs.neutralDiff > 0 ? `Precisamos reduzir os neutros em ${monthlyAnalysisCalcs.neutralDiff} para alcançar a meta. A estratégia deve focar em converter neutros em promotores.` : 'Manter o controle sobre o número de neutros para permanecer dentro da meta.'}</p>
-                            </div>
-                            <div className="p-4 bg-orange-50 border-l-4 border-orange-400 text-orange-800 rounded-r-lg">
-                              <p className="font-bold">Limite de Detratores</p>
-                               {(monthlyAnalysisCalcs.detractorDiff > 0) ? (
-                                <p><strong>Análise:</strong> Atualmente, temos <strong>{monthlyAnalysisData.currentDetra || 0}</strong> detratores, o que ultrapassa o limite projetado de <strong>{monthlyAnalysisData.projectedDetra || 0}</strong>, superando em <strong>{monthlyAnalysisCalcs.detractorExceedPercent}%</strong> a meta estabelecida.</p>
-                              ) : (
-                                <p><strong>Análise:</strong> Atualmente, temos <strong>{monthlyAnalysisData.currentDetra || 0}</strong> detratores. Estamos dentro do limite projetado de <strong>{monthlyAnalysisData.projectedDetra || 0}</strong>.</p>
-                              )}
-                              <p><strong>Ação necessária:</strong> Para atingir a meta de NPS, devemos reduzir o número de detratores. Não podemos ultrapassar <strong>{monthlyAnalysisData.projectedDetra || 0}</strong> detratores. Ações corretivas devem ser implementadas para diminuir esse número.</p>
-                            </div>
-                          </div>
+                      {/* Metas Projetadas (Cálculo Inverso) */}
+                      <div>
+                        <h4 className="text-xl font-bold mb-4 text-red-800">Passo 2: Metas Projetadas (Cálculo Inverso)</h4>
+                        <div className="p-6 bg-blue-50 border-l-4 border-blue-400 text-blue-800 rounded-r-lg space-y-3">
+                            <p className="font-bold">Com base no Volume Total Atual ({monthlyAnalysisCalcs.totalCurrentVolume}) e na Meta de NPS ({monthlyAnalysisData.npsGoal || 0}%):</p>
+                            <ul className="list-disc list-inside space-y-1">
+                                <li>Promotores necessários: <span className="font-bold">{monthlyAnalysisCalcs.inverseGoal.promoters}</span></li>
+                                <li>Neutros necessários: <span className="font-bold">{monthlyAnalysisCalcs.inverseGoal.neutrals}</span></li>
+                                <li>Detratores necessários: <span className="font-bold">{monthlyAnalysisCalcs.inverseGoal.detractors}</span></li>
+                            </ul>
+                            <p className="text-sm italic">Estes são os limites ideais para atingir sua meta de NPS com o volume atual de notas.</p>
                         </div>
+                      </div>
 
-                        {/* Ações Necessárias */}
-                        <div>
-                          <h4 className="text-xl font-bold mb-4 text-red-800">Passo 3: Ações Necessárias para Alcançar a Meta</h4>
+                      {/* Comparativo de Projeção */}
+                      <div>
+                        <h4 className="text-xl font-bold mb-4 text-red-800">Passo 3: Comparativo de Projeção</h4>
+                        <div className="p-6 bg-purple-50 border-l-4 border-purple-400 text-purple-800 rounded-r-lg space-y-3">
+                            <p className="font-bold">Análise Diária de Volume:</p>
+                            <ul className="list-disc list-inside space-y-1">
+                                <li>Média Diária Projetada (mês total): <span className="font-bold">{monthlyAnalysisCalcs.projectedTotalDailyAverage}</span> notas/dia</li>
+                                <li>Média Diária Atual (até o dia {20}): <span className="font-bold">{monthlyAnalysisCalcs.currentTotalDailyAverage}</span> notas/dia</li>
+                            </ul>
+                            {monthlyAnalysisCalcs.isAheadOfProjection ? (
+                                <p className="font-bold text-green-700">Status: Dentro da Expectativa! 🎉</p>
+                            ) : (
+                                <p className="font-bold text-red-700">Status: Abaixo da Expectativa. ⚠️</p>
+                            )}
+                            <p className="text-sm italic">Acompanhe esta métrica para garantir que o volume de notas esteja alinhado com a projeção mensal.</p>
+                        </div>
+                      </div>
+
+                      {/* Ações Necessárias */}
+                      <div>
+                        <h4 className="text-xl font-bold mb-4 text-red-800">Passo 4: Ações Necessárias para Alcançar a Meta</h4>
                            <div className="space-y-4">
                             <div className="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
                                <p><strong>Meta Projetada de NPS:</strong> A meta projetada para o mês é de <strong>{monthlyAnalysisData.npsGoal || 0}%</strong>.</p>
                             </div>
                             <div className="p-4 bg-gray-50 border rounded-lg">
                               <p className="font-bold text-gray-800">Redução de Neutros</p>
-                              <p className="text-gray-600 mt-1"><strong>Meta:</strong> {monthlyAnalysisCalcs.neutralDiff > 0 ? `Precisamos reduzir o número de neutros em ${monthlyAnalysisCalcs.neutralDiff} nas próximas semanas.` : 'Manter o número de neutros abaixo do limite.'}</p>
+                              <p className="text-gray-600 mt-1"><strong>Meta:</strong> Precisamos reduzir o número de neutros para <strong>{monthlyAnalysisCalcs.inverseGoal.neutrals}</strong>.</p>
                               <Textarea className="mt-2" placeholder="Digite as estratégias específicas para converter neutros em promotores e melhorar o engajamento..." value={monthlyAnalysisData.neutralStrategies} onChange={e => handleMonthlyAnalysisChange('neutralStrategies', e.target.value)} />
                             </div>
                              <div className="p-4 bg-gray-50 border rounded-lg">
                               <p className="font-bold text-gray-800">Controle de Detratores</p>
-                              <p className="text-gray-600 mt-1"><strong>Meta:</strong> Não podemos ter mais que <strong>{monthlyAnalysisData.projectedDetra || 0}</strong> detratores para não comprometer nossa meta.</p>
+                              <p className="text-gray-600 mt-1"><strong>Meta:</strong> Não podemos ter mais que <strong>{monthlyAnalysisCalcs.inverseGoal.detractors}</strong> detratores para não comprometer nossa meta.</p>
                               <Textarea className="mt-2" placeholder="Digite as estratégias específicas para mitigar a insatisfação e diminuir a quantidade de detratores..." value={monthlyAnalysisData.detractorStrategies} onChange={e => handleMonthlyAnalysisChange('detractorStrategies', e.target.value)} />
                             </div>
                           </div>
@@ -829,14 +868,11 @@
 
                         {/* Conclusão e Acompanhamento */}
                         <div>
-                           <h4 className="text-xl font-bold mb-4 text-red-800">Passo 4: Conclusão e Acompanhamento</h4>
+                           <h4 className="text-xl font-bold mb-4 text-red-800">Passo 5: Conclusão e Acompanhamento</h4>
                            <div className="p-6 bg-green-50 border-l-4 border-green-500 text-green-900 rounded-r-lg space-y-3">
-                              <p><strong>Resumo:</strong> Com base nos dados atuais e nas projeções, nossa prioridade é {monthlyAnalysisCalcs.neutralDiff > 0 ? `reduzir os neutros em ${monthlyAnalysisCalcs.neutralDiff}` : 'manter os neutros sob controle'} e limitar os detratores a {monthlyAnalysisData.projectedDetra || 0}. A meta de NPS projetada é <strong>{monthlyAnalysisData.npsGoal || 0}%</strong>.</p>
-                              <p><strong>Ação recomendada:</strong> Implementar as ações específicas definidas para redução de neutros e controle de detratores, garantindo que a meta de NPS seja alcançada até o final do mês.</p>
-                              <p><strong>Monitoramento contínuo:</strong> Será necessário acompanhar diariamente as métricas de NPS e ajustar as estratégias conforme necessário para garantir que os limites de neutros e detratores não sejam ultrapassados.</p>
+                              <p><strong>Resumo:</strong> Com base nos dados atuais e nas projeções, nossa prioridade é manter os neutros sob controle e limitar os detratores a {monthlyAnalysisCalcs.inverseGoal.detractors}. A meta de NPS projetada é <strong>{monthlyAnalysisData.npsGoal || 0}%</strong>.</p>
                            </div>
                         </div>
-                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
