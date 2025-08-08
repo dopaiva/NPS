@@ -399,9 +399,12 @@
           // DADOS E FUNÇÕES PARA A NOVA ABA DE ANÁLISE MENSAL
           const [monthlyAnalysisData, setMonthlyAnalysisData] = useState({ 
             collaboratorName: '',
-            currentProm: '', 
-            currentNeut: '', 
-            currentDetra: '', 
+            lastClosedProm: '', 
+            lastClosedNeut: '', 
+            lastClosedDetra: '',
+            partialProm: '',
+            partialNeut: '',
+            partialDetra: '',
             npsGoal: '95', 
             totalWorkingDays: '22',
             currentWorkingDay: '15',
@@ -412,20 +415,29 @@
           };
           
           const monthlyAnalysisCalcs = useMemo(() => {
-            const cProm = Number(monthlyAnalysisData.currentProm) || 0;
-            const cNeut = Number(monthlyAnalysisData.currentNeut) || 0;
-            const cDetra = Number(monthlyAnalysisData.currentDetra) || 0;
+            // Dados do último registo fechado (apenas para exibição)
+            const lastClosedProm = Number(monthlyAnalysisData.lastClosedProm) || 0;
+            const lastClosedNeut = Number(monthlyAnalysisData.lastClosedNeut) || 0;
+            const lastClosedDetra = Number(monthlyAnalysisData.lastClosedDetra) || 0;
+            const totalLastClosedVolume = lastClosedProm + lastClosedNeut + lastClosedDetra;
+            const lastClosedNps = calculateNps(lastClosedProm, lastClosedDetra, totalLastClosedVolume);
+
+            // Dados parciais do mês (base para projeção)
+            const cProm = Number(monthlyAnalysisData.partialProm) || 0;
+            const cNeut = Number(monthlyAnalysisData.partialNeut) || 0;
+            const cDetra = Number(monthlyAnalysisData.partialDetra) || 0;
+            const totalPartialVolume = cProm + cNeut + cDetra;
+            const partialNps = calculateNps(cProm, cDetra, totalPartialVolume);
+
+            // Dados de projeção
             const npsGoal = Number(monthlyAnalysisData.npsGoal) || 95;
             const totalWorkingDays = Number(monthlyAnalysisData.totalWorkingDays) || 1;
             const currentWorkingDay = Number(monthlyAnalysisData.currentWorkingDay) || 0;
 
-            const totalCurrentVolume = cProm + cNeut + cDetra;
-            const currentNps = calculateNps(cProm, cDetra, totalCurrentVolume);
-            
             const remainingWorkingDays = Math.max(0, totalWorkingDays - currentWorkingDay);
-            const dailyAverageVolume = currentWorkingDay > 0 ? totalCurrentVolume / currentWorkingDay : 0;
+            const dailyAverageVolume = currentWorkingDay > 0 ? totalPartialVolume / currentWorkingDay : 0;
             const projectedAdditionalVolume = Math.round(dailyAverageVolume * remainingWorkingDays);
-            const finalProjectedVolume = totalCurrentVolume + projectedAdditionalVolume;
+            const finalProjectedVolume = totalPartialVolume + projectedAdditionalVolume;
 
             const calculateScenarios = () => {
               if (finalProjectedVolume === 0) return [];
@@ -528,8 +540,10 @@
             const goalScenarios = calculateScenarios();
 
             return {
-              currentNps,
-              totalCurrentVolume,
+              lastClosedNps,
+              totalLastClosedVolume,
+              partialNps,
+              totalPartialVolume,
               finalProjectedVolume,
               remainingWorkingDays,
               goalScenarios
@@ -862,28 +876,47 @@
                           {/* INPUTS E TABELA DE METAS */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             {/* Coluna de Inputs */}
-                            <div className="p-6 bg-gray-50 rounded-lg shadow-inner space-y-4">
+                            <div className="p-6 bg-gray-50 rounded-lg shadow-inner space-y-6">
                                <div className="space-y-4">
                                 <h5 className="font-semibold text-lg text-gray-700">Ultimo registo fechado</h5>
                                 <div className="space-y-2">
-                                  <Label htmlFor="currentProm">Promotores</Label>
-                                  <Input id="currentProm" type="number" placeholder="Valor atual" value={monthlyAnalysisData.currentProm} onChange={e => handleMonthlyAnalysisChange('currentProm', e.target.value)} />
+                                  <Label htmlFor="lastClosedProm">Promotores</Label>
+                                  <Input id="lastClosedProm" type="number" placeholder="Valor do mês anterior" value={monthlyAnalysisData.lastClosedProm} onChange={e => handleMonthlyAnalysisChange('lastClosedProm', e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="currentNeut">Neutros</Label>
-                                  <Input id="currentNeut" type="number" placeholder="Valor atual" value={monthlyAnalysisData.currentNeut} onChange={e => handleMonthlyAnalysisChange('currentNeut', e.target.value)} />
+                                  <Label htmlFor="lastClosedNeut">Neutros</Label>
+                                  <Input id="lastClosedNeut" type="number" placeholder="Valor do mês anterior" value={monthlyAnalysisData.lastClosedNeut} onChange={e => handleMonthlyAnalysisChange('lastClosedNeut', e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="currentDetra">Detratores</Label>
-                                  <Input id="currentDetra" type="number" placeholder="Valor atual" value={monthlyAnalysisData.currentDetra} onChange={e => handleMonthlyAnalysisChange('currentDetra', e.target.value)} />
+                                  <Label htmlFor="lastClosedDetra">Detratores</Label>
+                                  <Input id="lastClosedDetra" type="number" placeholder="Valor do mês anterior" value={monthlyAnalysisData.lastClosedDetra} onChange={e => handleMonthlyAnalysisChange('lastClosedDetra', e.target.value)} />
                                 </div>
                                 <div className="mt-4 p-4 bg-white rounded-lg text-center shadow-sm">
-                                  <p className="font-semibold">Volume Total: <span className="font-bold text-red-700">{monthlyAnalysisCalcs.totalCurrentVolume}</span></p>
-                                  <p className="font-semibold">NPS Atual: <span className="font-bold text-red-700">{monthlyAnalysisCalcs.currentNps}%</span></p>
+                                  <p className="font-semibold">Volume Total: <span className="font-bold text-gray-700">{monthlyAnalysisCalcs.totalLastClosedVolume}</span></p>
+                                  <p className="font-semibold">NPS: <span className="font-bold text-gray-700">{monthlyAnalysisCalcs.lastClosedNps}%</span></p>
                                 </div>
                               </div>
                               <div className="space-y-4 border-t pt-4">
-                                <h5 className="font-semibold text-lg text-gray-700">Parcial:</h5>
+                                <h5 className="font-semibold text-lg text-red-700">Parcial do Mês</h5>
+                                <div className="space-y-2">
+                                  <Label htmlFor="partialProm">Promotores</Label>
+                                  <Input id="partialProm" type="number" placeholder="Valor parcial do mês" value={monthlyAnalysisData.partialProm} onChange={e => handleMonthlyAnalysisChange('partialProm', e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="partialNeut">Neutros</Label>
+                                  <Input id="partialNeut" type="number" placeholder="Valor parcial do mês" value={monthlyAnalysisData.partialNeut} onChange={e => handleMonthlyAnalysisChange('partialNeut', e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="partialDetra">Detratores</Label>
+                                  <Input id="partialDetra" type="number" placeholder="Valor parcial do mês" value={monthlyAnalysisData.partialDetra} onChange={e => handleMonthlyAnalysisChange('partialDetra', e.target.value)} />
+                                </div>
+                                <div className="mt-4 p-4 bg-white rounded-lg text-center shadow-sm">
+                                  <p className="font-semibold">Volume Parcial: <span className="font-bold text-red-700">{monthlyAnalysisCalcs.totalPartialVolume}</span></p>
+                                  <p className="font-semibold">NPS Parcial: <span className="font-bold text-red-700">{monthlyAnalysisCalcs.partialNps}%</span></p>
+                                </div>
+                              </div>
+                              <div className="space-y-4 border-t pt-4">
+                                <h5 className="font-semibold text-lg text-gray-700">Projeção:</h5>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
                                     <Label htmlFor="totalWorkingDays">Dias Úteis no Mês</Label>
@@ -908,6 +941,7 @@
                             {/* Coluna da Tabela de Metas */}
                             <div className="p-6 bg-blue-50 border-blue-200 rounded-lg shadow-inner">
                                 <h4 className="text-xl font-bold mb-4 text-blue-800">Metas Projetadas (Cálculo Inverso)</h4>
+                                <p className="text-sm text-gray-600 mb-4">Baseado na parcial do mês e na projeção de volume, veja os cenários para atingir a meta.</p>
                                 <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
