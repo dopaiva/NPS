@@ -12,9 +12,6 @@
   <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.js"></script>
   <script crossorigin src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- Incluindo bibliotecas para geração de PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     /* Estilo para a fonte "Inter" */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -32,7 +29,7 @@
       const { useState, useMemo, useEffect } = React;
       const { createRoot } = ReactDOM;
 
-      // Adicionar um pequeno atraso para garantir que Recharts, html2canvas e jspdf estejam totalmente carregados e disponíveis
+      // Adicionar um pequeno atraso para garantir que Recharts esteja totalmente carregado e disponível
       setTimeout(() => {
         if (typeof window.Recharts === 'undefined') {
           console.error("A biblioteca Recharts não foi carregada. Por favor, verifique a tag script para Recharts.js");
@@ -42,19 +39,6 @@
             root.render(
               <div className="text-center p-8 text-red-600 font-bold">
                 Erro ao carregar o gráfico. Por favor, tente novamente ou verifique sua conexão.
-              </div>
-            );
-          }
-          return;
-        }
-        if (typeof window.html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-          console.error("As bibliotecas html2canvas ou jspdf não foram carregadas. Verifique as tags de script.");
-          const rootElement = document.getElementById('root');
-          if (rootElement) {
-            const root = createRoot(rootElement);
-            root.render(
-              <div className="text-center p-8 text-red-600 font-bold">
-                Erro ao carregar a funcionalidade de PDF. Por favor, tente novamente.
               </div>
             );
           }
@@ -649,23 +633,28 @@
               });
 
 
-              // Desafio: Se nenhum cenário atingir a meta, calcular o NPS máximo possível e exibir a nova mensagem
-              let maxNpsPossible = calculateNps(cProm + projectedAdditionalVolume, cDetra, finalProjectedVolume); // Detratores atuais
+              // Desafio: Se o indicador parcial for >= 95 e o mês anterior teve NPS > 0
+              // Aumenta em 1 ponto do mês anterior, limitado a 100.
+              let maxNpsPossible = calculateNps(cProm + projectedAdditionalVolume, cDetra, finalProjectedVolume); // NPS máximo possível com os detratores atuais
 
-              if (parseFloat(partialNps) >= npsGoal && parseFloat(lastClosedNps) > 0) { // Condition modified here
-                  const newTargetNps = (parseFloat(lastClosedNps) + 1).toFixed(1);
-                  maxNpsPossible = newTargetNps; // Set maxPossibleNps to the new target for the visual component
+              if (parseFloat(partialNps) >= 95 && parseFloat(lastClosedNps) > 0) { 
+                  // Calcula o novo NPS alvo, limitando-o a 100
+                  const newTargetNpsRaw = parseFloat(lastClosedNps) + 1;
+                  const newTargetNps = Math.min(newTargetNpsRaw, 100).toFixed(1); // Limita a 100
+
+                  maxNpsPossible = newTargetNps; // Define o NPS máximo possível para o componente visual
+
                   scenarios.push({
                       name: `Desafio (Aumento de 1 ponto)`,
-                      prom: null, // These values are not directly calculated for this scenario
+                      prom: null, // Estes valores não são diretamente calculados para este cenário
                       neut: null,
                       detra: null,
                       nps: newTargetNps,
-                      isPossible: false, // It's still a "challenge" so keep isPossible as false for styling
+                      isPossible: false, // É um "desafio", mantém como false para o estilo
                       message: `Missão ${newTargetNps} 🚀\n\nA meta oficial é ${parseFloat(npsGoal).toFixed(1)}, mas o desafio é aumentar em 1 ponto o que já foi alcançado, chegando a ${newTargetNps}.\n\nO desafio? Chegar lá, passo a passo.\n🎯 Primeiro: quebrar a barreira dos ${parseFloat(lastClosedNps).toFixed(1)}\n🎯 Depois: segurar firme acima de ${parseFloat(lastClosedNps).toFixed(1)}\n🎯 Por fim: atingir o ${newTargetNps} e mostrar que entregamos tudo o que é possível.\nCada décimo conquistado será uma vitória. Vamos provar que o impossível se enfrenta com determinação.\n\nAproveite para potencializar o resultado: reforce o script com a equipe para direcionar o cliente a responder a pesquisa e, assim, aumentar o volume de participações. Cada resposta conta para chegarmos mais perto da meta.`
                   });
               } else if (scenarios.filter(s => parseFloat(s.nps) >= npsGoal).length === 0) {
-                // Original "Desafio" message if no other scenario is met and goal is unachievable
+                // Mensagem original de "Desafio" se nenhum outro cenário for atendido e a meta for inatingível
                 scenarios.push({
                   name: `Desafio (NPS Máximo Possível)`,
                   prom: maxNpsPossible,
@@ -693,78 +682,6 @@
             };
 
           }, [monthlyAnalysisData]);
-
-          // Função para gerar o PDF
-          const generatePdf = async () => {
-            const cardElement = document.getElementById('monthly-analysis-card'); // Elemento a ser capturado
-            if (!cardElement) {
-              console.error("Elemento com ID 'monthly-analysis-card' não encontrado.");
-              // Usar uma modal de erro em vez de alert
-              alert("Ocorreu um erro: o conteúdo para o PDF não foi encontrado.");
-              return;
-            }
-
-            // Armazenar a aba ativa atual para restaurar depois
-            const prevActiveTab = activeTab;
-
-            // Ativar a aba de Análise Mensal para garantir que o elemento esteja visível
-            setActiveTab('monthlyAnalysis');
-
-            // Add loading state
-            const pdfButton = document.getElementById('generate-pdf-button');
-            if (pdfButton) {
-                pdfButton.disabled = true;
-                pdfButton.textContent = 'Gerando PDF...';
-            }
-            
-            const originalBodyOverflow = document.body.style.overflow;
-            document.body.style.overflow = 'hidden'; // Prevent scrollbars during capture
-
-            try {
-              // Um pequeno atraso para garantir que o React renderize a aba correta e que o navegador tenha tempo para o layout
-              await new Promise(resolve => setTimeout(resolve, 100)); // Aumentado um pouco o delay para mais segurança
-
-              const canvas = await html2canvas(cardElement, {
-                scale: 2, // Aumenta a escala para melhor resolução do PDF
-                useCORS: true, // Necessário se houver imagens de diferentes origens
-                logging: false, // Desabilita logs no console da biblioteca
-              });
-
-              const imgData = canvas.toDataURL('image/png');
-              const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4'); // Portrait, mm, A4 format (210mm x 297mm)
-
-              const imgWidth = canvas.width;
-              const imgHeight = canvas.height;
-
-              const pageWidth = pdf.internal.pageSize.getWidth();
-              const pageHeight = pdf.internal.pageSize.getHeight();
-
-              // Calculate scaling factor to fit image into A4 page
-              const widthRatio = pageWidth / imgWidth;
-              const heightRatio = pageHeight / imgHeight;
-              const imgFitRatio = Math.min(widthRatio, heightRatio);
-
-              // Calculate position to center the image on the page
-              const imgX = (pageWidth - (imgWidth * imgFitRatio)) / 2;
-              const imgY = (pageHeight - (imgHeight * imgFitRatio)) / 2;
-
-              pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * imgFitRatio, imgHeight * imgFitRatio);
-              pdf.save('Relatorio_NPS_Mensal.pdf');
-
-            } catch (error) {
-              console.error("Erro ao gerar PDF:", error);
-              alert("Ocorreu um erro ao gerar o PDF. Por favor, tente novamente.");
-            } finally {
-              // Restaurar a aba ativa original
-              setActiveTab(prevActiveTab);
-              document.body.style.overflow = originalBodyOverflow;
-              if (pdfButton) {
-                  pdfButton.disabled = false;
-                  pdfButton.textContent = 'Gerar PDF';
-              }
-            }
-          };
-
 
           return (
             <div className="w-full max-w-7xl mx-auto space-y-8">
@@ -1195,15 +1112,6 @@
                           </div>
                         </CardContent>
                       </Card>
-                      <div className="flex justify-center mt-6">
-                        <Button
-                          id="generate-pdf-button"
-                          onClick={generatePdf}
-                          className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg"
-                        >
-                          Gerar PDF
-                        </Button>
-                      </div>
                     </TabsContent>
 
                   </Tabs>
@@ -1224,7 +1132,7 @@
             const root = createRoot(rootElement);
             root.render(<App />);
         }
-      }, 500); {/* Atraso de 500ms para garantir o carregamento do Recharts */}
+      }, 500); /* Atraso de 500ms para garantir o carregamento do Recharts */
     };
   </script>
 </body>
