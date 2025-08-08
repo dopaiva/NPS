@@ -146,8 +146,8 @@
           </label>
         );
 
-        const Tabs = ({ children, defaultValue }) => {
-          const [activeTab, setActiveTab] = useState(defaultValue);
+        // Modificado para aceitar activeTab e setActiveTab como props
+        const Tabs = ({ children, defaultValue, activeTab, setActiveTab }) => {
           return (
             <div className="flex flex-col">
               {React.Children.map(children, child =>
@@ -157,6 +157,7 @@
           );
         };
 
+        // Modificado para aceitar activeTab e setActiveTab como props
         const TabsList = ({ children, className, activeTab, setActiveTab }) => (
           <div className={`inline-flex h-11 items-center justify-center rounded-xl bg-gray-200 p-1 text-gray-600 shadow-inner ${className}`}>
             {React.Children.map(children, child =>
@@ -165,6 +166,7 @@
           </div>
         );
 
+        // Modificado para aceitar activeTab e setActiveTab como props
         const TabsTrigger = ({ children, value, className, activeTab, setActiveTab }) => (
           <button
             className={`inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-base font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
@@ -283,6 +285,8 @@
           const [inverseResults, setInverseResults] = useState([]);
           const [annualGoalResult, setAnnualGoalResult] = useState(null);
           const [projectedTotalNotes, setProjectedTotalNotes] = useState(1000);
+          // Adicionado estado para controlar a aba ativa no App
+          const [activeTab, setActiveTab] = useState('monthlyAnalysis');
           
           const calculateNps = (promoters, detractors, total) => {
             if (total === 0 || total === null || isNaN(total)) return 0;
@@ -383,7 +387,7 @@
             if (remainingPromotersNeeded < 0 || remainingDetractorsNeeded < 0 || remainingNeutralsNeeded < 0 || monthsToProject <= 0) {
               isAchievable = false;
               const maxPossiblePromoters = pastMetrics.totalPromoters + (monthsToProject * (projectedTotalNotes)); // Assume all new volume is promoters for max NPS
-              const maxPossibleDetractors = pastMetrics.totalDetractors; // Detrators don't decrease
+              const maxPossibleDetractors = pastMetrics.detractors; // Detrators don't decrease
               maxNps = calculateNps(maxPossiblePromoters, maxPossibleDetractors, projectedTotalAnnualVolume);
             }
             setAnnualGoalResult({
@@ -636,7 +640,7 @@
               const adjustedNpsS3 = calculateNps(promotersForScenario3, detractorsForScenario3, notesForScenario3);
 
               scenarios.push({
-                  name: `Cenário 3: Distribuição Ideal para NPS ${npsGoal} (Vol. Projetado)`,
+                  name: `Cenário 3: Distribuição Ideal para NPS ${parseFloat(npsGoal).toFixed(1)} (Vol. Projetado)`,
                   prom: promotersForScenario3,
                   neut: neutralsForScenario3,
                   detra: detractorsForScenario3,
@@ -648,7 +652,7 @@
               // Desafio: Se nenhum cenário atingir a meta, calcular o NPS máximo possível e exibir a nova mensagem
               let maxNpsPossible = calculateNps(cProm + projectedAdditionalVolume, cDetra, finalProjectedVolume); // Detratores atuais
 
-              if (parseFloat(partialNps) >= 95 && parseFloat(lastClosedNps) > 0) {
+              if (parseFloat(partialNps) >= npsGoal && parseFloat(lastClosedNps) > 0) { // Condition modified here
                   const newTargetNps = (parseFloat(lastClosedNps) + 1).toFixed(1);
                   maxNpsPossible = newTargetNps; // Set maxPossibleNps to the new target for the visual component
                   scenarios.push({
@@ -658,7 +662,7 @@
                       detra: null,
                       nps: newTargetNps,
                       isPossible: false, // It's still a "challenge" so keep isPossible as false for styling
-                      message: `Missão ${newTargetNps} 🚀\n\nA meta oficial é ${npsGoal}, mas o desafio é aumentar em 1 ponto o que já foi alcançado, chegando a ${newTargetNps}.\n\nO desafio? Chegar lá, passo a passo.\n🎯 Primeiro: quebrar a barreira dos ${parseFloat(lastClosedNps).toFixed(1)}%\n🎯 Depois: segurar firme acima de ${parseFloat(lastClosedNps).toFixed(1)}%\n🎯 Por fim: atingir o ${newTargetNps} e mostrar que entregamos tudo o que é possível.\nCada décimo conquistado será uma vitória. Vamos provar que o impossível se enfrenta com determinação.\n\nAproveite para potencializar o resultado: reforce o script com a equipe para direcionar o cliente a responder a pesquisa e, assim, aumentar o volume de participações. Cada resposta conta para chegarmos mais perto da meta.`
+                      message: `Missão ${newTargetNps} 🚀\n\nA meta oficial é ${parseFloat(npsGoal).toFixed(1)}, mas o desafio é aumentar em 1 ponto o que já foi alcançado, chegando a ${newTargetNps}.\n\nO desafio? Chegar lá, passo a passo.\n🎯 Primeiro: quebrar a barreira dos ${parseFloat(lastClosedNps).toFixed(1)}\n🎯 Depois: segurar firme acima de ${parseFloat(lastClosedNps).toFixed(1)}\n🎯 Por fim: atingir o ${newTargetNps} e mostrar que entregamos tudo o que é possível.\nCada décimo conquistado será uma vitória. Vamos provar que o impossível se enfrenta com determinação.\n\nAproveite para potencializar o resultado: reforce o script com a equipe para direcionar o cliente a responder a pesquisa e, assim, aumentar o volume de participações. Cada resposta conta para chegarmos mais perto da meta.`
                   });
               } else if (scenarios.filter(s => parseFloat(s.nps) >= npsGoal).length === 0) {
                 // Original "Desafio" message if no other scenario is met and goal is unachievable
@@ -669,7 +673,7 @@
                   detra: cDetra,
                   nps: maxNpsPossible,
                   isPossible: false,
-                  message: `Missão ${npsGoal} 🚀\n\nA meta oficial é ${npsGoal}, mas nosso limite real é ${maxNpsPossible}.\n\nO desafio? Chegar lá, passo a passo.\n🎯 Primeiro: quebrar a barreira dos 88%\n🎯 Depois: segurar firme acima de 89%\n🎯 Por fim: atingir o ${maxNpsPossible} e mostrar que entregamos tudo o que é possível.\nCada décimo conquistado será uma vitória. Vamos provar que o impossível se enfrenta com determinação.\n\nAproveite para potencializar o resultado: reforce o script com a equipe para direcionar o cliente a responder a pesquisa e, assim, aumentar o volume de participações. Cada resposta conta para chegarmos mais perto da meta.`
+                  message: `Missão ${parseFloat(npsGoal).toFixed(1)} 🚀\n\nA meta oficial é ${parseFloat(npsGoal).toFixed(1)}, mas nosso limite real é ${maxNpsPossible}.\n\nO desafio? Chegar lá, passo a passo.\n🎯 Primeiro: quebrar a barreira dos 88\n🎯 Depois: segurar firme acima de 89\n🎯 Por fim: atingir o ${maxNpsPossible} e mostrar que entregamos tudo o que é possível.\nCada décimo conquistado será uma vitória. Vamos provar que o impossível se enfrenta com determinação.\n\nAproveite para potencializar o resultado: reforce o script com a equipe para direcionar o cliente a responder a pesquisa e, assim, aumentar o volume de participações. Cada resposta conta para chegarmos mais perto da meta.`
                 });
               }
               
@@ -692,57 +696,72 @@
 
           // Função para gerar o PDF
           const generatePdf = async () => {
-            const input = document.getElementById('monthly-analysis-card'); // Elemento a ser capturado
-            if (!input) {
+            const cardElement = document.getElementById('monthly-analysis-card'); // Elemento a ser capturado
+            if (!cardElement) {
               console.error("Elemento com ID 'monthly-analysis-card' não encontrado.");
               // Usar uma modal de erro em vez de alert
               alert("Ocorreu um erro: o conteúdo para o PDF não foi encontrado.");
               return;
             }
 
-            // Salva o overflow original do body e define como visível temporariamente para garantir que tudo seja capturado
-            const originalOverflow = document.body.style.overflow;
-            document.body.style.overflow = 'visible';
+            // Armazenar a aba ativa atual para restaurar depois
+            const prevActiveTab = activeTab;
+
+            // Ativar a aba de Análise Mensal para garantir que o elemento esteja visível
+            setActiveTab('monthlyAnalysis');
+
+            // Add loading state
+            const pdfButton = document.getElementById('generate-pdf-button');
+            if (pdfButton) {
+                pdfButton.disabled = true;
+                pdfButton.textContent = 'Gerando PDF...';
+            }
             
-            // Adicionar uma tela de carregamento ou indicador visual
-            // Exemplo simples: desabilitar o botão
-            // const pdfButton = document.getElementById('generate-pdf-button');
-            // if (pdfButton) pdfButton.disabled = true;
+            const originalBodyOverflow = document.body.style.overflow;
+            document.body.style.overflow = 'hidden'; // Prevent scrollbars during capture
 
             try {
-              const canvas = await html2canvas(input, {
+              // Um pequeno atraso para garantir que o React renderize a aba correta e que o navegador tenha tempo para o layout
+              await new Promise(resolve => setTimeout(resolve, 100)); // Aumentado um pouco o delay para mais segurança
+
+              const canvas = await html2canvas(cardElement, {
                 scale: 2, // Aumenta a escala para melhor resolução do PDF
                 useCORS: true, // Necessário se houver imagens de diferentes origens
-                logging: false // Desabilita logs no console da biblioteca
+                logging: false, // Desabilita logs no console da biblioteca
               });
 
               const imgData = canvas.toDataURL('image/png');
-              const pdf = new window.jspdf.jsPDF({ // Acessa jsPDF do window
-                orientation: 'portrait',
-                unit: 'px',
-                format: [canvas.width, canvas.height] // Define o formato do PDF para o tamanho do canvas
-              });
+              const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4'); // Portrait, mm, A4 format (210mm x 297mm)
 
-              // Calcula o redimensionamento da imagem para caber na página do PDF, mantendo a proporção
               const imgWidth = canvas.width;
               const imgHeight = canvas.height;
-              const pdfWidth = pdf.internal.pageSize.getWidth();
-              const pdfHeight = pdf.internal.pageSize.getHeight();
 
-              let ratio = 1;
-              if (imgWidth > pdfWidth || imgHeight > pdfHeight) {
-                ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-              }
+              const pageWidth = pdf.internal.pageSize.getWidth();
+              const pageHeight = pdf.internal.pageSize.getHeight();
 
-              pdf.addImage(imgData, 'PNG', 0, 0, imgWidth * ratio, imgHeight * ratio);
+              // Calculate scaling factor to fit image into A4 page
+              const widthRatio = pageWidth / imgWidth;
+              const heightRatio = pageHeight / imgHeight;
+              const imgFitRatio = Math.min(widthRatio, heightRatio);
+
+              // Calculate position to center the image on the page
+              const imgX = (pageWidth - (imgWidth * imgFitRatio)) / 2;
+              const imgY = (pageHeight - (imgHeight * imgFitRatio)) / 2;
+
+              pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * imgFitRatio, imgHeight * imgFitRatio);
               pdf.save('Relatorio_NPS_Mensal.pdf');
+
             } catch (error) {
               console.error("Erro ao gerar PDF:", error);
-              // Usar uma modal de erro em vez de alert
               alert("Ocorreu um erro ao gerar o PDF. Por favor, tente novamente.");
             } finally {
-              document.body.style.overflow = originalOverflow; // Restaura o overflow original do body
-              // if (pdfButton) pdfButton.disabled = false; // Reabilitar o botão
+              // Restaurar a aba ativa original
+              setActiveTab(prevActiveTab);
+              document.body.style.overflow = originalBodyOverflow;
+              if (pdfButton) {
+                  pdfButton.disabled = false;
+                  pdfButton.textContent = 'Gerar PDF';
+              }
             }
           };
 
@@ -757,7 +776,9 @@
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue="monthlyAnalysis">
+                  {/* Passando activeTab e setActiveTab para Tabs */}
+                  <Tabs defaultValue="monthlyAnalysis" activeTab={activeTab} setActiveTab={setActiveTab}>
+                    {/* TabsList também recebe e repassa activeTab e setActiveTab */}
                     <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8">
                       <TabsTrigger value="projection">Projeção de NPS</TabsTrigger>
                       <TabsTrigger value="inverse">Cálculo Inverso</TabsTrigger>
@@ -766,7 +787,7 @@
                     </TabsList>
 
                     {/* ABA PROJEÇÃO DE NPS */}
-                    <TabsContent value="projection" className="mt-4">
+                    <TabsContent value="projection" activeTab={activeTab}>
                       <h3 className="text-2xl font-bold mb-4 text-gray-800">Projeção de NPS Consolidado</h3>
                       <p className="text-gray-600 mb-6">
                         Ajuste os volumes de promotores, detratores e neutros para a visão consolidada de todos os canais e veja a projeção do NPS.
@@ -921,7 +942,7 @@
                     </TabsContent>
                     
                     {/* ABA CÁLCULO INVERSO */}
-                    <TabsContent value="inverse" className="mt-4">
+                    <TabsContent value="inverse" activeTab={activeTab}>
                       <h3 className="text-2xl font-bold mb-4 text-gray-800">Cálculo Inverso (Meta de NPS 95)</h3>
                       <p className="text-gray-600 mb-6">
                         Informe o volume total de notas que você espera obter por mês para ver a distribuição necessária para alcançar um NPS de 95.
@@ -982,7 +1003,7 @@
                     </TabsContent>
 
                     {/* ABA CORRELAÇÃO DE INDICADORES */}
-                    <TabsContent value="correlation" className="mt-4">
+                    <TabsContent value="correlation" activeTab={activeTab}>
                       <h3 className="text-2xl font-bold mb-4 text-gray-800">Correlação de Indicadores</h3>
                       <p className="text-gray-600 mb-6">
                         Ajuste os valores dos indicadores projetados para ver a correlação estatística entre o NPS CX e o NP CX (MD).
@@ -1054,7 +1075,7 @@
                     </TabsContent>
                     
                     {/* ABA ANÁLISE MENSAL */}
-                    <TabsContent value="monthlyAnalysis" className="mt-4">
+                    <TabsContent value="monthlyAnalysis" activeTab={activeTab}>
                       <Card className="bg-white border-gray-200" id="monthly-analysis-card">
                         <CardHeader>
                           <CardTitle className="text-2xl text-gray-800">Script: Projeção de NPS</CardTitle>
@@ -1203,7 +1224,7 @@
             const root = createRoot(rootElement);
             root.render(<App />);
         }
-      }, 500); // Atraso de 500ms para garantir o carregamento do Recharts
+      }, 500); {/* Atraso de 500ms para garantir o carregamento do Recharts */}
     };
   </script>
 </body>
