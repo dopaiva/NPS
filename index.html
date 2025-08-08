@@ -54,7 +54,9 @@
           CartesianGrid,
           Tooltip,
           Legend,
-          ResponsiveContainer
+          ResponsiveContainer,
+          BarChart,
+          Bar
         } = window.Recharts; // Acessando Recharts diretamente do objeto window
 
         // Componentes recriados do shadcn para evitar erros de importação e manter o estilo
@@ -166,6 +168,73 @@
             {children}
           </div>
         );
+
+        // New component for the "Mission 90+" visuals
+        const MissionNpsChallenge = ({ currentNps, maxPossibleNps, goalNps }) => {
+            const metaFinal = parseFloat(maxPossibleNps);
+            const currentActualNps = parseFloat(currentNps);
+
+            const fases = [
+                { fase: "Quebrar 88", alvo: 88 },
+                { fase: "Segurar 89", alvo: 89 },
+                { fase: "Atingir Max", alvo: metaFinal }
+            ];
+
+            const progresso = Math.min((currentActualNps / metaFinal) * 100, 100);
+
+            let dynamicMessageContent = "";
+            if (currentActualNps >= metaFinal) {
+                dynamicMessageContent = "🎯 Meta Final atingida! Excelente trabalho!";
+            } else if (currentActualNps >= 89) {
+                dynamicMessageContent = "🔥 Fase 2 concluída! Rumo à meta final!";
+            } else if (currentActualNps >= 88) {
+                dynamicMessageContent = "🚀 Fase 1 concluída! Continue avançando!";
+            } else {
+                dynamicMessageContent = "Vamos buscar superar a primeira fase!";
+            }
+
+            return (
+                <div className="max-w-full mx-auto bg-white p-6 rounded-xl shadow-lg border border-red-300">
+                    <h1 className="text-3xl font-bold text-center text-red-600 mb-2">
+                        🚀 Missão {parseFloat(goalNps).toFixed(1)}
+                    </h1>
+                    <p className="text-center text-gray-700 mb-4">
+                        A meta oficial é {parseFloat(goalNps).toFixed(1)}, mas nosso limite real é <strong className="text-red-800">{metaFinal.toFixed(1)}</strong>.
+                        O desafio é chegar lá, passo a passo.
+                    </p>
+
+                    <div className="w-full bg-gray-200 rounded-full h-4 mb-6">
+                        <div
+                            className="bg-green-500 h-4 rounded-full transition-all duration-500"
+                            style={{ width: `${progresso}%` }}
+                        ></div>
+                    </div>
+
+                    <div className="flex justify-center mb-6">
+                        <ResponsiveContainer width="90%" height={200}>
+                            <BarChart data={fases} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="fase" />
+                                <YAxis domain={[0, 100]} />
+                                <Tooltip />
+                                <Bar dataKey="alvo" fill="#ef4444" /> {/* Use red for unachievable goal */}
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    <p className="mt-4 text-center font-semibold text-gray-700">
+                        {dynamicMessageContent}
+                    </p>
+
+                    <div className="mt-6 bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded">
+                        <p className="text-yellow-800 font-medium">
+                            Aproveite para potencializar o resultado: <strong className="font-bold">reforce o script</strong> com a equipe para direcionar o cliente a responder a pesquisa e, assim, aumentar o volume de participações. Cada resposta conta para chegarmos mais perto da meta.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
 
         const App = () => {
           // Dados para a aba de Projeção de NPS (dados originais)
@@ -299,7 +368,7 @@
             if (remainingPromotersNeeded < 0 || remainingDetractorsNeeded < 0 || remainingNeutralsNeeded < 0 || monthsToProject <= 0) {
               isAchievable = false;
               const maxPossiblePromoters = pastMetrics.totalPromoters + (monthsToProject * (projectedTotalNotes)); // Assume all new volume is promoters for max NPS
-              const maxPossibleDetractors = pastMetrics.detra; // Detractors don't decrease, use monthlyAnalysisData.lastClosedDetra if this is for the monthly tab calculation.
+              const maxPossibleDetractors = pastMetrics.totalDetractors; // Detrators don't decrease
               maxNps = calculateNps(maxPossiblePromoters, maxPossibleDetractors, projectedTotalAnnualVolume);
             }
             setAnnualGoalResult({
@@ -523,27 +592,43 @@
                   }
               }
 
-              // Cenário 3: Aumentar em 5 Promotores...
-              const additionalPromotersForScenario3 = 5;
-              if (projectedAdditionalVolume >= additionalPromotersForScenario3) {
-                const s3_finalProm = cProm + additionalPromotersForScenario3;
-                const s3_finalDetra = cDetra; // Assume detratores não mudam neste cenário
-                // O volume adicional restante (após adicionar os 5 promotores) se torna neutro
-                const s3_addedNeutrals = projectedAdditionalVolume - additionalPromotersForScenario3;
-                const s3_finalNeut = cNeut + s3_addedNeutrals;
+              // Cenário 3: Cálculos baseados na distribuição ideal para a meta (dados do cálculo inverso)
+              // Usa a lógica do cálculo inverso para o volume projetado do mês e a meta de NPS
+              const targetNpsForScenario3 = npsGoal;
+              const notesForScenario3 = finalProjectedVolume;
+              
+              // Recalculate neutralRatio based on current partial data for more localized inverse calculation
+              const currentNeutralRatio = totalPartialVolume > 0 ? cNeut / totalPartialVolume : 0;
 
-                // Garante que o número de neutros adicionais não é negativo
-                if (s3_addedNeutrals >= 0) {
-                   scenarios.push({
-                      name: `Cenário 3: Aumentar em 5 Promotores...`,
-                      prom: s3_finalProm,
-                      neut: s3_finalNeut,
-                      detra: s3_finalDetra,
-                      nps: calculateNps(s3_finalProm, s3_finalDetra, finalProjectedVolume),
-                      isPossible: true
-                   });
-                }
+              const neutralsForScenario3 = Math.round(notesForScenario3 * currentNeutralRatio);
+              const equation1_s3 = (targetNpsForScenario3 / 100) * notesForScenario3;
+              const equation2_s3 = notesForScenario3 - neutralsForScenario3;
+              let promotersForScenario3 = Math.round((equation1_s3 + equation2_s3) / 2);
+              let detractorsForScenario3 = Math.round((equation2_s3 - equation1_s3) / 2);
+
+              // Adjust if any value became negative due to rounding or impossible target combination
+              if (promotersForScenario3 < 0) promotersForScenario3 = 0;
+              if (detractorsForScenario3 < 0) detractorsForScenario3 = 0;
+              if (neutralsForScenario3 < 0) neutralsForScenario3 = 0;
+
+              // Ensure the sum of calculated parts matches the total volume (after initial rounding)
+              const sumCalculatedParts = promotersForScenario3 + neutralsForScenario3 + detractorsForScenario3;
+              if (sumCalculatedParts !== notesForScenario3) {
+                  // Distribute the difference (due to rounding) to promoters to ensure sum matches
+                  promotersForScenario3 += (notesForScenario3 - sumCalculatedParts);
               }
+
+              const adjustedNpsS3 = calculateNps(promotersForScenario3, detractorsForScenario3, notesForScenario3);
+
+              scenarios.push({
+                  name: `Cenário 3: Distribuição Ideal para NPS ${npsGoal} (Vol. Projetado)`,
+                  prom: promotersForScenario3,
+                  neut: neutralsForScenario3,
+                  detra: detractorsForScenario3,
+                  nps: adjustedNpsS3,
+                  isPossible: true
+              });
+
 
               // Desafio: Se nenhum cenário atingir a meta, calcular o NPS máximo possível e exibir a nova mensagem
               const maxPromForUnachievable = cProm + projectedAdditionalVolume; // Todos os adicionais viram promotores
@@ -710,7 +795,7 @@
                               </ul>
                               {annualGoalResult.isAchievable ? (
                                 <div className="mt-4 p-6 rounded-lg bg-green-100 text-green-800 border border-green-300">
-                                  <p className="font-extrabold text-xl">  A meta anual de NPS 95 é alcançável!</p>
+                                  <p className="font-extrabold text-xl">🎉 A meta anual de NPS 95 é alcançável!</p>
                                   <p className="mt-2">Para alcançar a meta, a distribuição mensal necessária é:</p>
                                   <ul className="mt-2 list-disc list-inside font-semibold">
                                     <li>Promotores por Mês: <span className="font-extrabold text-green-900">{annualGoalResult.monthlyPromoters}</span></li>
@@ -993,8 +1078,12 @@
                                     </tbody>
                                 </table>
                                 {monthlyAnalysisCalcs.goalScenarios.find(s => !s.isPossible) && (
-                                    <div className="mt-4 p-3 bg-red-100 text-red-800 rounded-lg text-center font-semibold whitespace-pre-line">
-                                        <p>{monthlyAnalysisCalcs.goalScenarios.find(s => !s.isPossible).message}</p>
+                                    <div className="mt-4 p-3 rounded-lg text-center font-semibold whitespace-pre-line">
+                                        <MissionNpsChallenge
+                                            currentNps={monthlyAnalysisCalcs.partialNps}
+                                            maxPossibleNps={monthlyAnalysisCalcs.goalScenarios.find(s => !s.isPossible).nps}
+                                            goalNps={monthlyAnalysisData.npsGoal}
+                                        />
                                     </div>
                                 )}
                                 </div>
@@ -1028,4 +1117,3 @@
   </script>
 </body>
 </html>
- 
